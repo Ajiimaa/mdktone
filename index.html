@@ -13,16 +13,16 @@
       justify-content: center;
       height: 100vh;
       background: #f7f7f7;
-      overflow: hidden; /* スクロールを防止 */
+      overflow: hidden;
     }
 
     .sound-line {
       position: absolute;
-      left: 40%; /* ラインを画面中央付近に配置 */
-      width: 20%; /* ラインの幅 */
+      left: 40%;
+      width: 20%;
       top: 0;
       bottom: 0;
-      background: linear-gradient(to bottom, #e3f2fd, #bbdefb); /* ラインの色 */
+      background: linear-gradient(to bottom, #e3f2fd, #bbdefb);
       border: 2px solid #2196f3;
     }
 
@@ -46,8 +46,8 @@
     }
 
     .slider input[type="range"] {
-      writing-mode: bt-lr; /* 縦方向のスライダー */
-      -webkit-appearance: slider-vertical; /* 縦スライダーのスタイル */
+      writing-mode: bt-lr;
+      -webkit-appearance: slider-vertical;
       width: 10px;
       height: 200px;
     }
@@ -74,7 +74,7 @@
       <option value="sine">Sine</option>
       <option value="square">Square</option>
       <option value="sawtooth">Sawtooth</option>
-      <option value="triangle">Triangle</option>
+      <option value="triangle" selected>Triangle</option> <!-- 初期選択を設定 -->
     </select>
   </div>
 
@@ -84,7 +84,7 @@
     <span>小</span>
   </div>
 
-  <div class="version">Version 1.1</div>
+  <div class="version">Version 1.2</div>
 
   <script>
     const soundLine = document.getElementById("soundLine");
@@ -96,44 +96,43 @@
     const gainNode = audioCtx.createGain();
 
     oscillator.connect(gainNode).connect(audioCtx.destination);
-    oscillator.type = "sine";
+
+    // 初期設定
+    oscillator.type = "triangle"; // 初期波形を triangle に設定
     oscillator.start();
 
     soundLine.addEventListener("pointerdown", (event) => {
-      audioCtx.resume(); // 再生可能状態にする
+      audioCtx.resume();
       playSound(event);
       soundLine.addEventListener("pointermove", playSound);
     });
 
     soundLine.addEventListener("pointerup", () => {
       soundLine.removeEventListener("pointermove", playSound);
-      gainNode.gain.setValueAtTime(0, audioCtx.currentTime); // 音を止める
+      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
     });
 
     soundLine.addEventListener("pointerleave", () => {
-      gainNode.gain.setValueAtTime(0, audioCtx.currentTime); // 音を止める
+      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
     });
 
     function playSound(event) {
       const rect = soundLine.getBoundingClientRect();
-      const y = event.clientY - rect.top; // Y座標の取得
-      const frequency = (1 - y / rect.height) * 1000 + 100; // 周波数の計算
+      const y = event.clientY - rect.top;
+      const frequency = (1 - y / rect.height) * 1000 + 100;
       oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
-      gainNode.gain.setValueAtTime(volumeSlider.value, audioCtx.currentTime); // 音量をスライダーの値に反映
+      gainNode.gain.setValueAtTime(volumeSlider.value, audioCtx.currentTime);
     }
 
-    // 音量スライダーの変更イベント
     volumeSlider.addEventListener("input", (event) => {
       const volume = event.target.value;
       gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
     });
 
-    // 波形選択イベント
     waveTypeSelector.addEventListener("change", (event) => {
       oscillator.type = event.target.value;
     });
 
-    // スワイプ時に音量スライダーを更新する
     function handleSliderChange(event) {
       const touch = event.touches[0];
       const sliderRect = volumeSlider.getBoundingClientRect();
@@ -154,7 +153,6 @@
       handleSliderChange(event);
     });
 
-    // タッチイベントでドロップダウンメニューを開けるように
     document.body.addEventListener(
       "touchstart",
       (event) => {
