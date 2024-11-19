@@ -16,12 +16,14 @@
       overflow: hidden; /* スクロールを防止 */
     }
 
-    canvas {
-      border: 2px solid black;
-      touch-action: none;
-      background: linear-gradient(to bottom, #e3f2fd, #bbdefb); /* 音の鳴る帯 */
-      width: 100%; /* 画面全体に広げる */
-      height: 100%; /* 上下に空白がないように */
+    .sound-line {
+      position: absolute;
+      left: 40%; /* ラインを画面中央付近に配置 */
+      width: 20%; /* ラインの幅 */
+      top: 0;
+      bottom: 0;
+      background: linear-gradient(to bottom, #e3f2fd, #bbdefb); /* ラインの色 */
+      border: 2px solid #2196f3;
     }
 
     .controls {
@@ -65,7 +67,7 @@
   </style>
 </head>
 <body>
-  <canvas id="soundCanvas"></canvas>
+  <div class="sound-line" id="soundLine"></div>
 
   <div class="controls">
     <select id="waveType">
@@ -82,10 +84,10 @@
     <span>小</span>
   </div>
 
-  <div class="version">Version 1.0</div>
+  <div class="version">Version 1.1</div>
 
   <script>
-    const canvas = document.getElementById("soundCanvas");
+    const soundLine = document.getElementById("soundLine");
     const volumeSlider = document.getElementById("volumeSlider");
     const waveTypeSelector = document.getElementById("waveType");
 
@@ -97,23 +99,23 @@
     oscillator.type = "sine";
     oscillator.start();
 
-    canvas.addEventListener("pointerdown", (event) => {
+    soundLine.addEventListener("pointerdown", (event) => {
       audioCtx.resume(); // 再生可能状態にする
       playSound(event);
-      canvas.addEventListener("pointermove", playSound);
+      soundLine.addEventListener("pointermove", playSound);
     });
 
-    canvas.addEventListener("pointerup", () => {
-      canvas.removeEventListener("pointermove", playSound);
+    soundLine.addEventListener("pointerup", () => {
+      soundLine.removeEventListener("pointermove", playSound);
       gainNode.gain.setValueAtTime(0, audioCtx.currentTime); // 音を止める
     });
 
-    canvas.addEventListener("pointerleave", () => {
+    soundLine.addEventListener("pointerleave", () => {
       gainNode.gain.setValueAtTime(0, audioCtx.currentTime); // 音を止める
     });
 
     function playSound(event) {
-      const rect = canvas.getBoundingClientRect();
+      const rect = soundLine.getBoundingClientRect();
       const y = event.clientY - rect.top; // Y座標の取得
       const frequency = (1 - y / rect.height) * 1000 + 100; // 周波数の計算
       oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
