@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>長押しで音を鳴らす</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f0f0f0;
+      position: relative;
+    }
+    .line {
+      width: 200px; /* 縦ラインの幅 */
+      height: 100%; /* 画面いっぱいの高さ */
+      background-color: rgba(0, 0, 255, 0.2); /* 薄い青色 */
+      position: absolute;
+    }
+  </style>
+</head>
+<body>
+  <div class="line"></div> <!-- 中央の縦ライン -->
+  <script>
+    let audioCtx;
+    let oscillator;
+    let gainNode;
+
+    // AudioContextを初期化
+    function initAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        console.log("AudioContextが初期化されました");
+      }
+    }
+
+    // 音を開始する関数
+    function startSound(yPosition) {
+      if (!audioCtx) return; // AudioContextが初期化されていない場合は何もしない
+      if (oscillator) return; // 既に音が鳴っている場合は新しい発音をしない
+
+      oscillator = audioCtx.createOscillator();
+      gainNode = audioCtx.createGain();
+
+      const frequency = 200 + (yPosition / window.innerHeight) * 1000; // 周波数を計算
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+
+      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); // 音量を設定
+      oscillator.connect(gainNode).connect(audioCtx.destination);
+      oscillator.start();
+      console.log("音が開始しました");
+    }
+
+    // 音を停止する関数
+    function stopSound() {
+      if (!oscillator) return; // 発音中でなければ何もしない
+
+      oscillator.stop();
+      oscillator.disconnect();
+      gainNode.disconnect();
+      oscillator = null;
+      gainNode = null;
+      console.log("音が停止しました");
+    }
+
+    // 縦ライン内でのクリック／タップを確認
+    function isWithinLine(x) {
+      const line = document.querySelector(".line");
+      const lineRect = line.getBoundingClientRect();
+      return x >= lineRect.left && x <= lineRect.right;
+    }
+
+    // イベントハンドラーを設定
+    document.body.addEventListener("mousedown", (event) => {
+      initAudioContext(); // 初期化（初回のみ実行）
+
+      if (isWithinLine(event.clientX)) {
+        startSound(event.clientY);
+      }
+    });
+
+    document.body.addEventListener("mouseup", stopSound);
+    document.body.addEventListener("mousemove", (event) => {
+      if (oscillator && isWithinLine(event.clientX)) {
+        const frequency = 200 + (event.clientY / window.innerHeight) * 1000;
+        oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+      }
+    });
+
+    document.body.addEventListener("touchstart", (event) => {
+      initAudioContext(); // 初期化（初回のみ実行）
+
+      const touch = event.touches[0];
+      if (isWithinLine(touch.clientX)) {
+        startSound(touch.clientY);
+      }
+    });
+
+    document.body.addEventListener("touchend", stopSound);
+    document.body.addEventListener("touchmove", (event) => {
+      if (!oscillator) return;
+
+      const touch = event.touches[0];
+      if (isWithinLine(touch.clientX)) {
+        const frequency = 200 + (touch.clientY / window.innerHeight) * 1000;
+        oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+      } else {
+        stopSound();
+      }
+    });
+  </script>
+</body>
+</html>
