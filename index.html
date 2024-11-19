@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>長押しで音を鳴らす</title>
+  <title>長押しで音を鳴らす（スワイプ防止）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
@@ -14,7 +14,7 @@
       position: relative;
     }
     .line {
-      width: 200px; /* 縦ラインの幅 */
+      width: 200px; /* 太めのライン */
       height: 100%; /* 画面いっぱいの高さ */
       background-color: rgba(0, 0, 255, 0.2); /* 薄い青色 */
       position: absolute;
@@ -38,32 +38,30 @@
 
     // 音を開始する関数
     function startSound(yPosition) {
-      if (!audioCtx) return; // AudioContextが初期化されていない場合は何もしない
-      if (oscillator) return; // 既に音が鳴っている場合は新しい発音をしない
+      if (!audioCtx) return;
+      if (oscillator) return;
 
       oscillator = audioCtx.createOscillator();
       gainNode = audioCtx.createGain();
 
-      const frequency = 200 + (yPosition / window.innerHeight) * 1000; // 周波数を計算
+      const frequency = 200 + (yPosition / window.innerHeight) * 1000;
       oscillator.type = "sine";
       oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
 
-      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); // 音量を設定
+      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
       oscillator.connect(gainNode).connect(audioCtx.destination);
       oscillator.start();
-      console.log("音が開始しました");
     }
 
     // 音を停止する関数
     function stopSound() {
-      if (!oscillator) return; // 発音中でなければ何もしない
+      if (!oscillator) return;
 
       oscillator.stop();
       oscillator.disconnect();
       gainNode.disconnect();
       oscillator = null;
       gainNode = null;
-      console.log("音が停止しました");
     }
 
     // 縦ライン内でのクリック／タップを確認
@@ -75,8 +73,7 @@
 
     // イベントハンドラーを設定
     document.body.addEventListener("mousedown", (event) => {
-      initAudioContext(); // 初期化（初回のみ実行）
-
+      initAudioContext();
       if (isWithinLine(event.clientX)) {
         startSound(event.clientY);
       }
@@ -91,16 +88,18 @@
     });
 
     document.body.addEventListener("touchstart", (event) => {
-      initAudioContext(); // 初期化（初回のみ実行）
+      event.preventDefault(); // デフォルト動作を無効化
+      initAudioContext();
 
       const touch = event.touches[0];
       if (isWithinLine(touch.clientX)) {
         startSound(touch.clientY);
       }
-    });
+    }, { passive: false });
 
     document.body.addEventListener("touchend", stopSound);
     document.body.addEventListener("touchmove", (event) => {
+      event.preventDefault(); // デフォルト動作を無効化
       if (!oscillator) return;
 
       const touch = event.touches[0];
@@ -110,7 +109,7 @@
       } else {
         stopSound();
       }
-    });
+    }, { passive: false });
   </script>
 </body>
 </html>
