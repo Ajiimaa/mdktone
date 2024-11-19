@@ -201,18 +201,32 @@
       handleSliderChange(event);
     });
 
-    // スワイプ時に音量スライダーを更新する関数
-    function handleSliderChange(event) {
-      const touch = event.touches[0];
-      const sliderWidth = volumeSlider.offsetWidth;
-      const offsetX = touch.clientX - volumeSlider.getBoundingClientRect().left;
-      const value = Math.min(Math.max(offsetX / sliderWidth, 0), 1);
-      volumeSlider.value = value;
+  // スワイプ時に音量スライダーを更新する関数
+  function handleSliderChange(event) {
+    const touch = event.touches[0]; // 最初のタッチを取得
+    const sliderRect = volumeSlider.getBoundingClientRect(); // スライダーの位置情報を取得
+    const sliderHeight = sliderRect.height; // スライダーの高さ
+    const offsetY = touch.clientY - sliderRect.top; // タッチ位置のY座標とスライダー上端の差
 
-      if (gainNode) {
-        gainNode.gain.setValueAtTime(parseFloat(volumeSlider.value), audioCtx.currentTime);
-      }
+    // スライダーの値を計算（スライダーの上下反転を考慮）
+    const value = 1 - Math.min(Math.max(offsetY / sliderHeight, 0), 1);
+    volumeSlider.value = value; // スライダーの値を設定
+
+    // 音量ノードに反映
+    if (gainNode) {
+      gainNode.gain.setValueAtTime(value, audioCtx.currentTime);
     }
+  }
+
+  // タッチイベントの追加
+  volumeSlider.addEventListener("touchstart", (event) => {
+    handleSliderChange(event); // 最初のタッチ位置で更新
+  });
+
+  volumeSlider.addEventListener("touchmove", (event) => {
+    event.preventDefault(); // スクロール防止
+    handleSliderChange(event); // スワイプ位置で更新
+  });
 
     // 縦ライン内でのクリック／タップ確認
     function isWithinLine(x) {
