@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>縦向き音量調整付き</title>
+  <title>音量ラベル修正版</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
@@ -15,37 +15,97 @@
     }
     .line {
       width: 200px;
-      height: 70%;
+      height: 100%;
       background-color: rgba(0, 0, 255, 0.2);
       position: absolute;
+      top: 0;
     }
     .controls {
       position: absolute;
-      right: 20px; /* 画面右端に配置 */
-      height: 70%; /* スライダーの高さを画面と揃える */
+      top: 20px;
+      left: 20px;
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      gap: 10px;
+    }
+    .slider-container {
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
       align-items: center;
+      gap: 20px;
     }
     .slider {
-      writing-mode: bt-lr; /* 縦向きに設定 */
-      transform: rotate(180deg); /* 上が最小、下が最大の設定 */
-      height: 100%; /* 縦方向にフルサイズ */
-      width: 20px; /* スライダーの幅 */
+      -webkit-appearance: none;
+      appearance: none;
+      writing-mode: bt-lr;
+      transform: rotate(270deg);
+      width: 200px;
+      height: 20px;
+      background: #ccc;
+      border-radius: 10px;
+    }
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      background: #333;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .slider::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      background: #333;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .label {
+      font-size: 16px;
+      font-weight: bold;
+      color: black; /* 文字色を黒に指定 */
+      position: absolute;
+    }
+    .label.min {
+      top: calc(50% + 110px); /* スライダーの下に配置 */
+      right: 25px; /* スライダーから少し右へ */
+    }
+    .label.max {
+      top: calc(50% - 130px); /* スライダーの上に配置 */
+      right: 25px; /* スライダーから少し右へ */
+    }
+    .dropdown {
+      font-size: 16px;
     }
   </style>
 </head>
 <body>
   <div class="line"></div>
   <div class="controls">
-    <input id="volume" class="slider" type="range" min="0" max="1" step="0.01" value="0.1">
+    <select id="waveform" class="dropdown">
+      <option value="sine">Sine</option>
+      <option value="square">Square</option>
+      <option value="sawtooth">Sawtooth</option>
+      <option value="triangle">Triangle</option>
+    </select>
   </div>
+  <div class="slider-container">
+    <span class="label max">大</span> <!-- スライダー上 -->
+    <input id="volume" class="slider" type="range" min="0" max="1" step="0.01" value="0.5">
+    <span class="label min">小</span> <!-- スライダー下 -->
+  </div>
+
   <script>
-    let audioCtx;
-    let oscillator;
-    let gainNode;
+    let audioCtx = null;
+    let oscillator = null;
+    let gainNode = null;
     const volumeSlider = document.getElementById('volume');
+    const waveformSelect = document.getElementById('waveform');
+    let isPlaying = false;
 
     // AudioContextを初期化
     function initAudioContext() {
@@ -57,17 +117,19 @@
 
     // 音を開始する関数
     function startSound(yPosition) {
-      if (!audioCtx) return;
-      if (oscillator) return;
+      if (!audioCtx || isPlaying) return;
+
+      isPlaying = true;
 
       oscillator = audioCtx.createOscillator();
-      gainNode = audioCtx.createGain();
+      if (!gainNode) {
+        gainNode = audioCtx.createGain();
+      }
 
       const frequency = 200 + (yPosition / window.innerHeight) * 1000;
-      oscillator.type = "sine";
+      oscillator.type = waveformSelect.value; // 選択した音色を適用
       oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
 
-      // スライダーの初期値を反映
       gainNode.gain.setValueAtTime(parseFloat(volumeSlider.value), audioCtx.currentTime);
 
       oscillator.connect(gainNode).connect(audioCtx.destination);
@@ -78,21 +140,14 @@
     function stopSound() {
       if (!oscillator) return;
 
+      isPlaying = false;
+
       oscillator.stop();
       oscillator.disconnect();
-      gainNode.disconnect();
       oscillator = null;
-      gainNode = null;
     }
 
-    // 縦ライン内でのクリック／タップを確認
-    function isWithinLine(x) {
-      const line = document.querySelector(".line");
-      const lineRect = line.getBoundingClientRect();
-      return x >= lineRect.left && x <= lineRect.right;
-    }
-
-    // 音量調整のイベント
+    // 音量スライダーのイベント
     volumeSlider.addEventListener("input", () => {
       if (gainNode) {
         gainNode.gain.setValueAtTime(parseFloat(volumeSlider.value), audioCtx.currentTime);
@@ -136,6 +191,13 @@
         oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
       }
     }, { passive: false });
+
+    // 縦ライン内でのクリック／タップ確認
+    function isWithinLine(x) {
+      const line = document.querySelector(".line");
+      const lineRect = line.getBoundingClientRect();
+      return x >= lineRect.left && x <= lineRect.right;
+    }
   </script>
 </body>
 </html>
