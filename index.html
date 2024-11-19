@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>長押しで音を鳴らす（スワイプ防止）</title>
+  <title>音量調整付き</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       margin: 0;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       height: 100vh;
@@ -14,19 +15,35 @@
       position: relative;
     }
     .line {
-      width: 200px; /* 太めのライン */
-      height: 100%; /* 画面いっぱいの高さ */
-      background-color: rgba(0, 0, 255, 0.2); /* 薄い青色 */
+      width: 200px;
+      height: 70%;
+      background-color: rgba(0, 0, 255, 0.2);
       position: absolute;
+    }
+    .controls {
+      position: absolute;
+      bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .slider {
+      width: 300px;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <div class="line"></div> <!-- 中央の縦ライン -->
+  <div class="line"></div>
+  <div class="controls">
+    <label for="volume">音量調整:</label>
+    <input id="volume" class="slider" type="range" min="0" max="1" step="0.01" value="0.1">
+  </div>
   <script>
     let audioCtx;
     let oscillator;
     let gainNode;
+    const volumeSlider = document.getElementById('volume');
 
     // AudioContextを初期化
     function initAudioContext() {
@@ -48,7 +65,9 @@
       oscillator.type = "sine";
       oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
 
-      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      // スライダーの初期値を反映
+      gainNode.gain.setValueAtTime(parseFloat(volumeSlider.value), audioCtx.currentTime);
+
       oscillator.connect(gainNode).connect(audioCtx.destination);
       oscillator.start();
     }
@@ -71,6 +90,13 @@
       return x >= lineRect.left && x <= lineRect.right;
     }
 
+    // 音量調整のイベント
+    volumeSlider.addEventListener("input", () => {
+      if (gainNode) {
+        gainNode.gain.setValueAtTime(parseFloat(volumeSlider.value), audioCtx.currentTime);
+      }
+    });
+
     // イベントハンドラーを設定
     document.body.addEventListener("mousedown", (event) => {
       initAudioContext();
@@ -88,7 +114,7 @@
     });
 
     document.body.addEventListener("touchstart", (event) => {
-      event.preventDefault(); // デフォルト動作を無効化
+      event.preventDefault();
       initAudioContext();
 
       const touch = event.touches[0];
@@ -99,15 +125,13 @@
 
     document.body.addEventListener("touchend", stopSound);
     document.body.addEventListener("touchmove", (event) => {
-      event.preventDefault(); // デフォルト動作を無効化
+      event.preventDefault();
       if (!oscillator) return;
 
       const touch = event.touches[0];
       if (isWithinLine(touch.clientX)) {
         const frequency = 200 + (touch.clientY / window.innerHeight) * 1000;
         oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
-      } else {
-        stopSound();
       }
     }, { passive: false });
   </script>
