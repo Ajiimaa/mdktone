@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>音量調整付き</title>
+  <title>縦向き音量調整付き</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       margin: 0;
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
       height: 100vh;
@@ -22,21 +21,24 @@
     }
     .controls {
       position: absolute;
-      bottom: 20px;
+      right: 20px; /* 画面右端に配置 */
+      height: 70%; /* スライダーの高さを画面と揃える */
       display: flex;
       flex-direction: column;
+      justify-content: center;
       align-items: center;
     }
     .slider {
-      width: 300px;
-      margin-top: 10px;
+      writing-mode: bt-lr; /* 縦向きに設定 */
+      transform: rotate(180deg); /* 上が最小、下が最大の設定 */
+      height: 100%; /* 縦方向にフルサイズ */
+      width: 20px; /* スライダーの幅 */
     }
   </style>
 </head>
 <body>
   <div class="line"></div>
   <div class="controls">
-    <label for="volume">音量調整:</label>
     <input id="volume" class="slider" type="range" min="0" max="1" step="0.01" value="0.1">
   </div>
   <script>
