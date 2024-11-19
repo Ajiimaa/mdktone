@@ -234,6 +234,20 @@
       const lineRect = line.getBoundingClientRect();
       return x >= lineRect.left && x <= lineRect.right;
     }
+
+  // タッチイベントのデフォルト動作を制御
+  document.body.addEventListener("touchstart", (event) => {
+    const target = event.target;
+
+    // ドロップダウンメニューをタッチした場合はイベントをそのまま通す
+    if (target.tagName === "SELECT") {
+      return;
+    }
+
+    // その他のタッチイベントはデフォルト動作を防止
+    event.preventDefault();
+  }, { passive: false });
+
   </script>
 </body>
 </html>
