@@ -13,12 +13,15 @@
       justify-content: center;
       height: 100vh;
       background: #f7f7f7;
+      overflow: hidden; /* スクロールを防止 */
     }
 
     canvas {
       border: 2px solid black;
       touch-action: none;
       background: linear-gradient(to bottom, #e3f2fd, #bbdefb); /* 音の鳴る帯 */
+      width: 100%; /* 画面全体に広げる */
+      height: 100%; /* 上下に空白がないように */
     }
 
     .controls {
@@ -51,10 +54,18 @@
       font-size: 14px;
       margin: 5px 0;
     }
+
+    .version {
+      position: absolute;
+      bottom: 5px;
+      right: 5px;
+      font-size: 12px;
+      color: #555;
+    }
   </style>
 </head>
 <body>
-  <canvas id="soundCanvas" width="300" height="500"></canvas>
+  <canvas id="soundCanvas"></canvas>
 
   <div class="controls">
     <select id="waveType">
@@ -70,6 +81,8 @@
     <input id="volumeSlider" type="range" min="0" max="1" step="0.01" value="0.5">
     <span>小</span>
   </div>
+
+  <div class="version">Version 1.0</div>
 
   <script>
     const canvas = document.getElementById("soundCanvas");
