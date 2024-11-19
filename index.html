@@ -1,253 +1,155 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>音量ラベル修正版</title>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>音遊びアプリ</title>
   <style>
     body {
       margin: 0;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
+      justify-content: center;
       height: 100vh;
-      background-color: #f0f0f0;
-      position: relative;
+      background: #f7f7f7;
     }
-    .line {
-      width: 200px;
-      height: 100%;
-      background-color: rgba(0, 0, 255, 0.2);
-      position: absolute;
-      top: 0;
+
+    canvas {
+      border: 2px solid black;
+      touch-action: none;
     }
+
     .controls {
       position: absolute;
-      top: 20px;
-      left: 20px;
+      top: 10px;
+      right: 10px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      align-items: flex-end;
     }
-    .slider-container {
-      position: absolute;
-      right: 10px; /* 右端に寄せる */
+
+    .slider {
+      position: fixed;
+      right: 10px;
       top: 50%;
       transform: translateY(-50%);
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 20px;
     }
-    .slider {
-      -webkit-appearance: none;
-      appearance: none;
-      writing-mode: bt-lr;
-      transform: rotate(270deg);
-      width: 150px; /* 幅を少し狭く調整 */
-      height: 20px;
-      background: #ccc;
-      border-radius: 10px;
+
+    .slider input[type="range"] {
+      writing-mode: bt-lr; /* 縦方向のスライダー */
+      -webkit-appearance: slider-vertical; /* 縦スライダーのスタイル */
+      width: 10px;
+      height: 200px;
     }
-    .slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 20px;
-      height: 20px;
-      background: #333;
-      border-radius: 50%;
-      cursor: pointer;
-    }
-    .slider::-moz-range-thumb {
-      width: 20px;
-      height: 20px;
-      background: #333;
-      border-radius: 50%;
-      cursor: pointer;
-    }
-    .label {
-      font-size: 16px;
-      font-weight: bold;
-      color: black; /* 文字色を黒に指定 */
-      position: absolute;
-    }
-    .label.min {
-      top: calc(50% + 110px); /* スライダーの下に配置 */
-      right: 25px; /* スライダーから少し右へ */
-    }
-    .label.max {
-      top: calc(50% - 130px); /* スライダーの上に配置 */
-      right: 25px; /* スライダーから少し右へ */
-    }
-    .dropdown {
-      font-size: 16px;
+
+    .slider span {
+      font-size: 14px;
+      margin: 5px 0;
     }
   </style>
 </head>
 <body>
-  <div class="line"></div>
+  <canvas id="soundCanvas" width="300" height="500"></canvas>
+
   <div class="controls">
-    <select id="waveform" class="dropdown">
+    <select id="waveType">
       <option value="sine">Sine</option>
       <option value="square">Square</option>
       <option value="sawtooth">Sawtooth</option>
       <option value="triangle">Triangle</option>
     </select>
   </div>
-  <div class="slider-container">
-    <span class="label max">大</span> <!-- スライダー上 -->
-    <input id="volume" class="slider" type="range" min="0" max="1" step="0.01" value="0.5">
-    <span class="label min">小</span> <!-- スライダー下 -->
+
+  <div class="slider">
+    <span>大</span>
+    <input id="volumeSlider" type="range" min="0" max="1" step="0.01" value="0.5">
+    <span>小</span>
   </div>
 
   <script>
-    let audioCtx = null;
-    let oscillator = null;
-    let gainNode = null;
-    const volumeSlider = document.getElementById('volume');
-    const waveformSelect = document.getElementById('waveform');
-    let isPlaying = false;
+    const canvas = document.getElementById("soundCanvas");
+    const volumeSlider = document.getElementById("volumeSlider");
+    const waveTypeSelector = document.getElementById("waveType");
 
-    // AudioContextを初期化
-    function initAudioContext() {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        console.log("AudioContextが初期化されました");
-      }
-    }
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
 
-    // 音を開始する関数
-    function startSound(yPosition) {
-      if (!audioCtx || isPlaying) return;
+    oscillator.connect(gainNode).connect(audioCtx.destination);
+    oscillator.type = "sine";
+    oscillator.start();
 
-      isPlaying = true;
+    canvas.addEventListener("pointerdown", (event) => {
+      audioCtx.resume(); // 再生可能状態にする
+      playSound(event);
+      canvas.addEventListener("pointermove", playSound);
+    });
 
-      oscillator = audioCtx.createOscillator();
-      if (!gainNode) {
-        gainNode = audioCtx.createGain();
-      }
+    canvas.addEventListener("pointerup", () => {
+      canvas.removeEventListener("pointermove", playSound);
+      gainNode.gain.setValueAtTime(0, audioCtx.currentTime); // 音を止める
+    });
 
-      const frequency = 200 + (yPosition / window.innerHeight) * 1000;
-      oscillator.type = waveformSelect.value; // 選択した音色を適用
+    canvas.addEventListener("pointerleave", () => {
+      gainNode.gain.setValueAtTime(0, audioCtx.currentTime); // 音を止める
+    });
+
+    function playSound(event) {
+      const rect = canvas.getBoundingClientRect();
+      const y = event.clientY - rect.top; // Y座標の取得
+      const frequency = (1 - y / rect.height) * 1000 + 100; // 周波数の計算
       oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
-
-      gainNode.gain.setValueAtTime(parseFloat(volumeSlider.value), audioCtx.currentTime);
-
-      oscillator.connect(gainNode).connect(audioCtx.destination);
-      oscillator.start();
+      gainNode.gain.setValueAtTime(volumeSlider.value, audioCtx.currentTime); // 音量をスライダーの値に反映
     }
 
-    // 音を停止する関数
-    function stopSound() {
-      if (!oscillator) return;
+    // 音量スライダーの変更イベント
+    volumeSlider.addEventListener("input", (event) => {
+      const volume = event.target.value;
+      gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+    });
 
-      isPlaying = false;
+    // 波形選択イベント
+    waveTypeSelector.addEventListener("change", (event) => {
+      oscillator.type = event.target.value;
+    });
 
-      oscillator.stop();
-      oscillator.disconnect();
-      oscillator = null;
+    // スワイプ時に音量スライダーを更新する
+    function handleSliderChange(event) {
+      const touch = event.touches[0];
+      const sliderRect = volumeSlider.getBoundingClientRect();
+      const sliderHeight = sliderRect.height;
+      const offsetY = touch.clientY - sliderRect.top;
+
+      const value = 1 - Math.min(Math.max(offsetY / sliderHeight, 0), 1);
+      volumeSlider.value = value;
+      gainNode.gain.setValueAtTime(value, audioCtx.currentTime);
     }
 
-    // 音量スライダーのイベント
-    volumeSlider.addEventListener("input", () => {
-      if (gainNode) {
-        gainNode.gain.setValueAtTime(parseFloat(volumeSlider.value), audioCtx.currentTime);
-      }
-    });
-
-    // イベントハンドラーを設定
-    document.body.addEventListener("mousedown", (event) => {
-      initAudioContext();
-      if (isWithinLine(event.clientX)) {
-        startSound(event.clientY);
-      }
-    });
-
-    document.body.addEventListener("mouseup", stopSound);
-    document.body.addEventListener("mousemove", (event) => {
-      if (oscillator && isWithinLine(event.clientX)) {
-        const frequency = 200 + (event.clientY / window.innerHeight) * 1000;
-        oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
-      }
-    });
-
-    document.body.addEventListener("touchstart", (event) => {
-      event.preventDefault();
-      initAudioContext();
-
-      const touch = event.touches[0];
-      if (isWithinLine(touch.clientX)) {
-        startSound(touch.clientY);
-      }
-    }, { passive: false });
-
-    document.body.addEventListener("touchend", stopSound);
-    document.body.addEventListener("touchmove", (event) => {
-      event.preventDefault();
-      if (!oscillator) return;
-
-      const touch = event.touches[0];
-      if (isWithinLine(touch.clientX)) {
-        const frequency = 200 + (touch.clientY / window.innerHeight) * 1000;
-        oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
-      }
-    }, { passive: false });
-
-    // タッチイベントの追加（音量スライダー）
     volumeSlider.addEventListener("touchstart", (event) => {
       handleSliderChange(event);
     });
 
     volumeSlider.addEventListener("touchmove", (event) => {
+      event.preventDefault();
       handleSliderChange(event);
     });
 
-  // スワイプ時に音量スライダーを更新する関数
-  function handleSliderChange(event) {
-    const touch = event.touches[0]; // 最初のタッチを取得
-    const sliderRect = volumeSlider.getBoundingClientRect(); // スライダーの位置情報を取得
-    const sliderHeight = sliderRect.height; // スライダーの高さ
-    const offsetY = touch.clientY - sliderRect.top; // タッチ位置のY座標とスライダー上端の差
-
-    // スライダーの値を計算（スライダーの上下反転を考慮）
-    const value = 1 - Math.min(Math.max(offsetY / sliderHeight, 0), 1);
-    volumeSlider.value = value; // スライダーの値を設定
-
-    // 音量ノードに反映
-    if (gainNode) {
-      gainNode.gain.setValueAtTime(value, audioCtx.currentTime);
-    }
-  }
-
-  // タッチイベントの追加
-  volumeSlider.addEventListener("touchstart", (event) => {
-    handleSliderChange(event); // 最初のタッチ位置で更新
-  });
-
-  volumeSlider.addEventListener("touchmove", (event) => {
-    event.preventDefault(); // スクロール防止
-    handleSliderChange(event); // スワイプ位置で更新
-  });
-
-    // 縦ライン内でのクリック／タップ確認
-    function isWithinLine(x) {
-      const line = document.querySelector(".line");
-      const lineRect = line.getBoundingClientRect();
-      return x >= lineRect.left && x <= lineRect.right;
-    }
-
-  // タッチイベントのデフォルト動作を制御
-  document.body.addEventListener("touchstart", (event) => {
-    const target = event.target;
-
-    // ドロップダウンメニューをタッチした場合はイベントをそのまま通す
-    if (target.tagName === "SELECT") {
-      return;
-    }
-
-    // その他のタッチイベントはデフォルト動作を防止
-    event.preventDefault();
-  }, { passive: false });
-
+    // タッチイベントでドロップダウンメニューを開けるように
+    document.body.addEventListener(
+      "touchstart",
+      (event) => {
+        const target = event.target;
+        if (target.tagName === "SELECT") {
+          return;
+        }
+        event.preventDefault();
+      },
+      { passive: false }
+    );
   </script>
 </body>
 </html>
