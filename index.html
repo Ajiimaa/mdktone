@@ -74,22 +74,23 @@
       <option value="sine">Sine</option>
       <option value="square">Square</option>
       <option value="sawtooth">Sawtooth</option>
-      <option value="triangle" selected>Triangle</option> <!-- 初期選択を設定 -->
+      <option value="triangle" selected>Triangle</option>
     </select>
   </div>
 
-  <div class="slider">
+  <div class="slider" id="volumeControl">
     <span>大</span>
     <input id="volumeSlider" type="range" min="0" max="1" step="0.01" value="0.5">
     <span>小</span>
   </div>
 
-  <div class="version">Version 1.3</div>
+  <div class="version">Version 1.4</div>
 
   <script>
     const soundLine = document.getElementById("soundLine");
     const volumeSlider = document.getElementById("volumeSlider");
     const waveTypeSelector = document.getElementById("waveType");
+    const volumeControl = document.getElementById("volumeControl");
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const oscillator = audioCtx.createOscillator();
@@ -97,11 +98,21 @@
 
     oscillator.connect(gainNode).connect(audioCtx.destination);
 
-    // 初期設定
-    oscillator.type = "triangle"; // 初期波形を triangle に設定
+    oscillator.type = "triangle";
     oscillator.start();
 
+    function isInsideVolumeControl(event) {
+      const rect = volumeControl.getBoundingClientRect();
+      return (
+        event.clientX >= rect.left &&
+        event.clientX <= rect.right &&
+        event.clientY >= rect.top &&
+        event.clientY <= rect.bottom
+      );
+    }
+
     soundLine.addEventListener("pointerdown", (event) => {
+      if (isInsideVolumeControl(event)) return; // 音量バー上なら音を鳴らさない
       audioCtx.resume();
       playSound(event);
       soundLine.addEventListener("pointermove", playSound);
@@ -119,7 +130,7 @@
     function playSound(event) {
       const rect = soundLine.getBoundingClientRect();
       const y = event.clientY - rect.top;
-      const frequency = (y / rect.height) * 1000 + 100; // 上が低音、下が高音になるよう修正
+      const frequency = (y / rect.height) * 1000 + 100;
       oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
       gainNode.gain.setValueAtTime(volumeSlider.value, audioCtx.currentTime);
     }
