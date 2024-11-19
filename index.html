@@ -30,7 +30,7 @@
     }
     .slider-container {
       position: absolute;
-      right: 10px;
+      right: 10px; /* 右端に寄せる */
       top: 50%;
       transform: translateY(-50%);
       display: flex;
@@ -43,7 +43,7 @@
       appearance: none;
       writing-mode: bt-lr;
       transform: rotate(270deg);
-      width: 150px;
+      width: 150px; /* 幅を少し狭く調整 */
       height: 20px;
       background: #ccc;
       border-radius: 10px;
@@ -191,6 +191,28 @@
         oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
       }
     }, { passive: false });
+
+    // タッチイベントの追加（音量スライダー）
+    volumeSlider.addEventListener("touchstart", (event) => {
+      handleSliderChange(event);
+    });
+
+    volumeSlider.addEventListener("touchmove", (event) => {
+      handleSliderChange(event);
+    });
+
+    // スワイプ時に音量スライダーを更新する関数
+    function handleSliderChange(event) {
+      const touch = event.touches[0];
+      const sliderWidth = volumeSlider.offsetWidth;
+      const offsetX = touch.clientX - volumeSlider.getBoundingClientRect().left;
+      const value = Math.min(Math.max(offsetX / sliderWidth, 0), 1);
+      volumeSlider.value = value;
+
+      if (gainNode) {
+        gainNode.gain.setValueAtTime(parseFloat(volumeSlider.value), audioCtx.currentTime);
+      }
+    }
 
     // 縦ライン内でのクリック／タップ確認
     function isWithinLine(x) {
