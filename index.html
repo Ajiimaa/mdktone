@@ -114,7 +114,7 @@
       );
     }
 
-    // 音量バーを触っているときには音を鳴らさないように
+    // 音量バーを触っている間には音を鳴らさないように
     volumeSlider.addEventListener("pointerdown", (event) => {
       isVolumeBarActive = true;
       gainNode.gain.setValueAtTime(0, audioCtx.currentTime); // 音を停止
@@ -145,7 +145,8 @@
     });
 
     function playSound(event) {
-      if (isVolumeBarActive || !audioCtx.state === 'running') return; // 音量バーがアクティブか、音が鳴っていない場合は音を鳴らさない
+      // 音量バーが触れられている場合は音を鳴らさない
+      if (isVolumeBarActive || !audioCtx.state === 'running') return;
 
       const rect = soundLine.getBoundingClientRect();
       const y = event.clientY - rect.top;
@@ -164,7 +165,7 @@
       oscillator.type = event.target.value;
     });
 
-    // 音量バーを触っているときには音を鳴らさないように
+    // 音量バーを触っている間には音を鳴らさないように
     function handleSliderChange(event) {
       const touch = event.touches[0];
       const sliderRect = volumeSlider.getBoundingClientRect();
