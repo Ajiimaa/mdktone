@@ -84,7 +84,7 @@
     <span>小</span>
   </div>
 
-  <div class="version">Version 1.6</div>
+  <div class="version">Version 1.7</div>
 
   <script>
     const soundLine = document.getElementById("soundLine");
@@ -163,7 +163,7 @@
       oscillator.type = event.target.value;
     });
 
-    // 音量バーを触っている時には音を鳴らさないように
+    // 音量バーを触っているときには音を鳴らさないように
     function handleSliderChange(event) {
       const touch = event.touches[0];
       const sliderRect = volumeSlider.getBoundingClientRect();
