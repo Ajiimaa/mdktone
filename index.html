@@ -84,7 +84,7 @@
     <span>小</span>
   </div>
 
-  <div class="version">Version 1.9</div>
+  <div class="version">Version 1.8</div>
 
   <script>
     const soundLine = document.getElementById("soundLine");
@@ -115,8 +115,9 @@
     }
 
     // 音量バーを触っているときには音を鳴らさないように
-    volumeSlider.addEventListener("pointerdown", () => {
+    volumeSlider.addEventListener("pointerdown", (event) => {
       isVolumeBarActive = true;
+      gainNode.gain.setValueAtTime(0, audioCtx.currentTime); // 音を停止
     });
 
     volumeSlider.addEventListener("pointerup", () => {
