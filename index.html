@@ -74,23 +74,22 @@
       <option value="sine">Sine</option>
       <option value="square">Square</option>
       <option value="sawtooth">Sawtooth</option>
-      <option value="triangle" selected>Triangle</option>
+      <option value="triangle" selected>Triangle</option> <!-- 初期選択を設定 -->
     </select>
   </div>
 
-  <div class="slider" id="volumeControl">
+  <div class="slider">
     <span>大</span>
     <input id="volumeSlider" type="range" min="0" max="1" step="0.01" value="0.5">
     <span>小</span>
   </div>
 
-  <div class="version">Version 1.8</div>
+  <div class="version">Version 1.3</div>
 
   <script>
     const soundLine = document.getElementById("soundLine");
     const volumeSlider = document.getElementById("volumeSlider");
     const waveTypeSelector = document.getElementById("waveType");
-    const volumeControl = document.getElementById("volumeControl");
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const oscillator = audioCtx.createOscillator();
@@ -98,62 +97,29 @@
 
     oscillator.connect(gainNode).connect(audioCtx.destination);
 
-    oscillator.type = "triangle";
+    // 初期設定
+    oscillator.type = "triangle"; // 初期波形を triangle に設定
     oscillator.start();
 
-    let isVolumeBarActive = false;
-    let isSoundActive = false;
-    let isPointerActive = false;
-
-    // 音量バーを触ったときに音を鳴らさないようにする
-    volumeSlider.addEventListener("pointerdown", () => {
-      isVolumeBarActive = true;
-      gainNode.gain.setValueAtTime(0, audioCtx.currentTime); // 音を停止
-    });
-
-    volumeSlider.addEventListener("pointerup", () => {
-      isVolumeBarActive = false;
-    });
-
-    // 音量バー外を触ったときに音を鳴らす
     soundLine.addEventListener("pointerdown", (event) => {
-      if (isVolumeBarActive) return; // 音量バーを触っていたら音を鳴らさない
       audioCtx.resume();
       playSound(event);
-      isPointerActive = true;
-      soundLine.addEventListener("pointermove", handlePointerMove);
+      soundLine.addEventListener("pointermove", playSound);
     });
 
     soundLine.addEventListener("pointerup", () => {
-      soundLine.removeEventListener("pointermove", handlePointerMove);
+      soundLine.removeEventListener("pointermove", playSound);
       gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-      isPointerActive = false;
     });
 
     soundLine.addEventListener("pointerleave", () => {
       gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-      isPointerActive = false;
     });
 
-    // 音を鳴らす
     function playSound(event) {
-      if (isVolumeBarActive || !audioCtx.state === 'running') return;
-
       const rect = soundLine.getBoundingClientRect();
       const y = event.clientY - rect.top;
-      const frequency = (y / rect.height) * 1000 + 100;
-      oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
-      gainNode.gain.setValueAtTime(volumeSlider.value, audioCtx.currentTime);
-      isSoundActive = true;
-    }
-
-    // スライドしている間でも音が途切れないようにする
-    function handlePointerMove(event) {
-      if (!isPointerActive || isVolumeBarActive || !audioCtx.state === 'running') return;
-
-      const rect = soundLine.getBoundingClientRect();
-      const y = event.clientY - rect.top;
-      const frequency = (y / rect.height) * 1000 + 100;
+      const frequency = (y / rect.height) * 1000 + 100; // 上が低音、下が高音になるよう修正
       oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
       gainNode.gain.setValueAtTime(volumeSlider.value, audioCtx.currentTime);
     }
@@ -167,7 +133,6 @@
       oscillator.type = event.target.value;
     });
 
-    // 音量バーを触っている間には音を鳴らさない
     function handleSliderChange(event) {
       const touch = event.touches[0];
       const sliderRect = volumeSlider.getBoundingClientRect();
@@ -188,21 +153,17 @@
       handleSliderChange(event);
     });
 
-    // 画面上で指が離れているときには音が鳴らないようにする
-    document.body.addEventListener("pointerup", () => {
-      if (!isVolumeBarActive) {
-        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-        isSoundActive = false; // 音を停止
-      }
-    });
-
-    // pointerleaveイベントで指が離れた場合の音停止
-    document.body.addEventListener("pointerleave", () => {
-      if (!isVolumeBarActive) {
-        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-        isSoundActive = false; // 音を停止
-      }
-    });
+    document.body.addEventListener(
+      "touchstart",
+      (event) => {
+        const target = event.target;
+        if (target.tagName === "SELECT") {
+          return;
+        }
+        event.preventDefault();
+      },
+      { passive: false }
+    );
   </script>
 </body>
 </html>
