@@ -84,7 +84,7 @@
     <span>小</span>
   </div>
 
-  <div class="version">Version 1.8</div>
+  <div class="version">Version 1.9</div>
 
   <script>
     const soundLine = document.getElementById("soundLine");
@@ -103,9 +103,11 @@
 
     let isVolumeBarActive = false; // 音量バーがアクティブかどうかのフラグ
     let isSoundActive = false; // 音が鳴っているかどうかのフラグ
+    let isPointerActive = false; // ポインタが動いている間は音を途切れさせない
+    let lastPointerPosition = null; // 最後のポインタ位置
 
     // 音量バーが触れられているかどうか
-    volumeSlider.addEventListener("pointerdown", (event) => {
+    volumeSlider.addEventListener("pointerdown", () => {
       isVolumeBarActive = true;
       gainNode.gain.setValueAtTime(0, audioCtx.currentTime); // 音を停止
     });
@@ -121,23 +123,23 @@
       }
       audioCtx.resume();
       playSound(event);
-      soundLine.addEventListener("pointermove", playSound);
+      isPointerActive = true;
+      soundLine.addEventListener("pointermove", handlePointerMove);
     });
 
     soundLine.addEventListener("pointerup", () => {
-      soundLine.removeEventListener("pointermove", playSound);
+      soundLine.removeEventListener("pointermove", handlePointerMove);
       gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-      isSoundActive = false; // 音を停止
+      isPointerActive = false;
     });
 
     soundLine.addEventListener("pointerleave", () => {
       gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-      isSoundActive = false;
+      isPointerActive = false;
     });
 
     // 音を鳴らす処理
     function playSound(event) {
-      // 音量バーが触れられている場合は音を鳴らさない
       if (isVolumeBarActive || !audioCtx.state === 'running') return;
 
       const rect = soundLine.getBoundingClientRect();
@@ -146,6 +148,18 @@
       oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
       gainNode.gain.setValueAtTime(volumeSlider.value, audioCtx.currentTime);
       isSoundActive = true;
+    }
+
+    // ポインタが移動したときに音を鳴らし続ける
+    function handlePointerMove(event) {
+      if (!isPointerActive || isVolumeBarActive || !audioCtx.state === 'running') return;
+
+      const rect = soundLine.getBoundingClientRect();
+      const y = event.clientY - rect.top;
+      const frequency = (y / rect.height) * 1000 + 100;
+      oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+      gainNode.gain.setValueAtTime(volumeSlider.value, audioCtx.currentTime);
+      lastPointerPosition = event.clientY;
     }
 
     volumeSlider.addEventListener("input", (event) => {
