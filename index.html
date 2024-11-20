@@ -84,7 +84,7 @@
     <span>小</span>
   </div>
 
-  <div class="version">Version 1.5</div>
+  <div class="version">Version 1.6</div>
 
   <script>
     const soundLine = document.getElementById("soundLine");
@@ -102,6 +102,7 @@
     oscillator.start();
 
     let isVolumeBarActive = false; // 音量バーがアクティブかどうかのフラグ
+    let isSoundActive = false; // 音が鳴っているかどうかのフラグ
 
     function isInsideVolumeControl(event) {
       const rect = volumeControl.getBoundingClientRect();
@@ -126,20 +127,23 @@
     soundLine.addEventListener("pointerup", () => {
       soundLine.removeEventListener("pointermove", playSound);
       gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+      isSoundActive = false; // 音を停止
     });
 
     soundLine.addEventListener("pointerleave", () => {
       gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+      isSoundActive = false;
     });
 
     function playSound(event) {
-      if (isVolumeBarActive) return; // 音量バーがアクティブなら音を鳴らさない
+      if (isVolumeBarActive || !audioCtx.state === 'running') return; // 音量バーがアクティブか、音が鳴っていない場合は音を鳴らさない
 
       const rect = soundLine.getBoundingClientRect();
       const y = event.clientY - rect.top;
       const frequency = (y / rect.height) * 1000 + 100;
       oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
       gainNode.gain.setValueAtTime(volumeSlider.value, audioCtx.currentTime);
+      isSoundActive = true;
     }
 
     volumeSlider.addEventListener("input", (event) => {
