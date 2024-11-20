@@ -101,12 +101,11 @@
     oscillator.type = "triangle";
     oscillator.start();
 
-    let isVolumeBarActive = false; // 音量バーがアクティブかどうかのフラグ
-    let isSoundActive = false; // 音が鳴っているかどうかのフラグ
-    let isPointerActive = false; // ポインタが動いている間は音を途切れさせない
-    let lastPointerPosition = null; // 最後のポインタ位置
+    let isVolumeBarActive = false;
+    let isSoundActive = false;
+    let isPointerActive = false;
 
-    // 音量バーが触れられているかどうか
+    // 音量バーを触ったときに音を鳴らさないようにする
     volumeSlider.addEventListener("pointerdown", () => {
       isVolumeBarActive = true;
       gainNode.gain.setValueAtTime(0, audioCtx.currentTime); // 音を停止
@@ -116,11 +115,9 @@
       isVolumeBarActive = false;
     });
 
-    // 音量バー以外の部分でのみ音を鳴らす
+    // 音量バー外を触ったときに音を鳴らす
     soundLine.addEventListener("pointerdown", (event) => {
-      if (isInsideVolumeControl(event)) {
-        return; // 音量バーに触れている時は音を鳴らさない
-      }
+      if (isVolumeBarActive) return; // 音量バーを触っていたら音を鳴らさない
       audioCtx.resume();
       playSound(event);
       isPointerActive = true;
@@ -138,7 +135,7 @@
       isPointerActive = false;
     });
 
-    // 音を鳴らす処理
+    // 音を鳴らす
     function playSound(event) {
       if (isVolumeBarActive || !audioCtx.state === 'running') return;
 
@@ -150,7 +147,7 @@
       isSoundActive = true;
     }
 
-    // ポインタが移動したときに音を鳴らし続ける
+    // スライドしている間でも音が途切れないようにする
     function handlePointerMove(event) {
       if (!isPointerActive || isVolumeBarActive || !audioCtx.state === 'running') return;
 
@@ -159,7 +156,6 @@
       const frequency = (y / rect.height) * 1000 + 100;
       oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
       gainNode.gain.setValueAtTime(volumeSlider.value, audioCtx.currentTime);
-      lastPointerPosition = event.clientY;
     }
 
     volumeSlider.addEventListener("input", (event) => {
@@ -171,7 +167,7 @@
       oscillator.type = event.target.value;
     });
 
-    // 音量バーを触っている間には音を鳴らさないように
+    // 音量バーを触っている間には音を鳴らさない
     function handleSliderChange(event) {
       const touch = event.touches[0];
       const sliderRect = volumeSlider.getBoundingClientRect();
@@ -207,17 +203,6 @@
         isSoundActive = false; // 音を停止
       }
     });
-
-    // 音量バー外の範囲かどうかを確認
-    function isInsideVolumeControl(event) {
-      const rect = volumeControl.getBoundingClientRect();
-      return (
-        event.clientX >= rect.left &&
-        event.clientX <= rect.right &&
-        event.clientY >= rect.top &&
-        event.clientY <= rect.bottom
-      );
-    }
   </script>
 </body>
 </html>
