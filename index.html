@@ -114,10 +114,18 @@
       );
     }
 
+    // 音量バーを触っているときには音を鳴らさないように
+    volumeSlider.addEventListener("pointerdown", () => {
+      isVolumeBarActive = true;
+    });
+
+    volumeSlider.addEventListener("pointerup", () => {
+      isVolumeBarActive = false;
+    });
+
     soundLine.addEventListener("pointerdown", (event) => {
       if (isInsideVolumeControl(event)) {
-        isVolumeBarActive = true; // 音量バーを触っている時は音を鳴らさない
-        return;
+        return; // 音量バーに触れている時は音を鳴らさない
       }
       audioCtx.resume();
       playSound(event);
@@ -155,6 +163,7 @@
       oscillator.type = event.target.value;
     });
 
+    // 音量バーを触っている時には音を鳴らさないように
     function handleSliderChange(event) {
       const touch = event.touches[0];
       const sliderRect = volumeSlider.getBoundingClientRect();
@@ -175,17 +184,21 @@
       handleSliderChange(event);
     });
 
-    document.body.addEventListener(
-      "touchstart",
-      (event) => {
-        const target = event.target;
-        if (target.tagName === "SELECT") {
-          return;
-        }
-        event.preventDefault();
-      },
-      { passive: false }
-    );
+    // 画面上で指が離れているときには音が鳴らないようにする
+    document.body.addEventListener("pointerup", () => {
+      if (!isVolumeBarActive) {
+        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+        isSoundActive = false; // 音を停止
+      }
+    });
+
+    // pointerleaveイベントで指が離れた場合の音停止
+    document.body.addEventListener("pointerleave", () => {
+      if (!isVolumeBarActive) {
+        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+        isSoundActive = false; // 音を停止
+      }
+    });
   </script>
 </body>
 </html>
